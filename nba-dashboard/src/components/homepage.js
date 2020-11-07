@@ -1,96 +1,78 @@
 import React, { Component } from 'react';
-import {Bar, Doughnut} from 'react-chartjs-2';
+import {Doughnut} from 'react-chartjs-2';
+require("dotenv").config();
 
 
-export default class homepage extends Component {
 
-  // state = {
-  //     labels: null,
-  //     datasets: null,
-  // }
+export default class Homepage extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isLoaded: false,
+      data: {},
+    }
+  }
+  
 
   componentDidMount(){
 
-    const url = 'https://swapi.dev/api/people/';
+    const url = 'https://free-nba.p.rapidapi.com/teams/25';
 
     //async function that gets page info from api
-    async function loadResponse(url) {
-        let response = await fetch(url);
-        if (response.status == 200) {
-            let this_page = await response.json();
-            return this_page;
-        }
-        throw new Error(response.status);
-    }
-    
-    //gets eye color for all characters in object
-    async function get_all_info(){
-        let next_url = url;
-        let all_eye_color = {};
-        do {
-            await loadResponse(next_url).then((data) => {
-            data.results.map(x => {   
-    
-            if(!all_eye_color.hasOwnProperty(x.eye_color)){
-              all_eye_color[x.eye_color] = 0;
+    let loadResponse = async () => {
+        let response = await fetch(url, 
+          {"method": "GET",
+           "headers":
+           {
+            "x-rapidapi-host": process.env.REACT_APP_API_URL,
+            "x-rapidapi-key": process.env.REACT_APP_API_KEY,
             }
-            all_eye_color[x.eye_color] = all_eye_color[x.eye_color] + 1;
-    
-            });
-    
-            next_url = data.next;
-            }) 
-        } while(next_url !== null);
-        return all_eye_color;
+          }).then(response=>response.json())
+            .then(json=>{
+            console.log(json);
+            this.setState({data: json})
+          }).catch(err=>{
+            console.log(err);
+          })
     }
-    
-    //for colors that contain a ',' or a '-', assign a random color to represent it.
-    function get_colors(all_eye_info){
-        let colors = Object.keys(all_eye_info);
-        for(let i = 0; i < Object.keys(all_eye_info).length; i++){
-          if(colors[i].includes(',')||colors[i].includes('-')){
-            let random_color = [0,0,0];
-            let rc = random_color.map(x => Math.floor(Math.random() * 255));
-            colors[i] = `rgb(${rc[0]}, ${rc[1]}, ${rc[2]})`;
-          }
-        }
-        return colors;
-    }
-    
-    get_all_info().then((eye_color_data) => {
 
-      this.setState({
-        labels: Object.keys(eye_color_data),
-        datasets: [{
-          data: Object.values(eye_color_data),
-          backgroundColor: 
-          get_colors(eye_color_data),
-          borderWidth: 0,
-        }],
-      })
-
-    });
+    
+    
+    loadResponse();
+    this.setState({isLoaded:true});
 }
 
+  load_data = () => {
+      return (
+          <div>
+              <p>abbreviation: {this.state.data.abbreviation} </p>
+              <p>city: {this.state.data.city}</p>
+              <p>id is: {this.state.data.id}</p>
+              <p>full_name is: {this.state.data.full_name}</p>
+          </div>
+      )
+  }
+
+
   render() {
+    if(!this.state.isLoaded){
+      return (
+        <div>
+            <h1>
+              NBA Dashboard
+            </h1>
+        </div>
+      )
+    }
+
     return (
       <div>
-          <h1 id="results">
+          <h1>
             NBA Dashboard
           </h1>
-          <Doughnut
-            data={this.state}
-            options={{
-              scales: {
-                  yAxes: [{
-                    display: false,
-                  }]
-              },
-              legend: {
-                position: 'bottom'
-              }
-            }}
-          />        
+          
+          {this.load_data(this.state.data)}
+
       </div>
     );
   }
